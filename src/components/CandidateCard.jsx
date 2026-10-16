@@ -1,5 +1,5 @@
 import React from "react";
-import { Crown, Heart, Sparkles, Music, Check } from "lucide-react";
+import { Crown, Heart, Check, Music } from "lucide-react";
 
 export default function CandidateCard({
   contestant,
@@ -13,161 +13,116 @@ export default function CandidateCard({
       className="glass-panel"
       style={{
         position: "relative",
-        borderRadius: "var(--radius-lg)",
+        borderRadius: "var(--radius-md)",
         overflow: "hidden",
         cursor: disabled ? "not-allowed" : "pointer",
-        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
         border: isSelected
           ? "2px solid #ffd700"
           : "1px solid rgba(255, 215, 0, 0.2)",
         background: isSelected
-          ? "linear-gradient(180deg, rgba(45, 24, 60, 0.95) 0%, rgba(26, 15, 38, 0.95) 100%)"
-          : "rgba(22, 14, 34, 0.75)",
-        transform: isSelected ? "scale(1.02)" : "none",
+          ? "linear-gradient(90deg, rgba(50, 24, 60, 0.95) 0%, rgba(30, 16, 42, 0.95) 100%)"
+          : "rgba(22, 14, 34, 0.78)",
         boxShadow: isSelected
-          ? "0 0 30px rgba(255, 215, 0, 0.35), 0 10px 25px rgba(0,0,0,0.6)"
-          : "var(--shadow-card)",
-        opacity: disabled ? 0.65 : 1
-      }}
-    >
-      {/* SBD Badge */}
-      <div style={{
-        position: "absolute",
-        top: "14px",
-        left: "14px",
-        zIndex: 10,
-        background: "rgba(13, 9, 20, 0.85)",
-        backdropFilter: "blur(8px)",
-        border: "1px solid rgba(255, 215, 0, 0.5)",
-        borderRadius: "9999px",
-        padding: "4px 12px",
+          ? "0 0 20px rgba(255, 215, 0, 0.35), 0 4px 15px rgba(0,0,0,0.5)"
+          : "0 2px 8px rgba(0,0,0,0.3)",
+        opacity: disabled ? 0.6 : 1,
         display: "flex",
         alignItems: "center",
-        gap: "6px",
-        color: "#ffd700",
-        fontWeight: 800,
-        fontSize: "13px",
-        boxShadow: "0 4px 10px rgba(0,0,0,0.5)"
-      }}>
-        <Crown size={14} color="#ffd700" />
-        <span>SBD {contestant.sbd}</span>
-      </div>
-
-      {/* Checkmark indicator when selected */}
-      {isSelected && (
-        <div style={{
-          position: "absolute",
-          top: "14px",
-          right: "14px",
-          zIndex: 10,
-          background: "var(--gold-gradient)",
-          color: "#000",
-          borderRadius: "50%",
-          width: "32px",
-          height: "32px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontWeight: 900,
-          boxShadow: "0 0 15px rgba(255, 215, 0, 0.7)"
-        }}>
-          <Check size={20} strokeWidth={3} />
-        </div>
-      )}
-
-      {/* Image container */}
+        padding: "8px 12px",
+        gap: "12px",
+        minHeight: "88px"
+      }}
+    >
+      {/* Ảnh nhỏ đại diện bên trái kèm SBD */}
       <div style={{
         position: "relative",
-        width: "100%",
-        paddingTop: "125%", // 4:5 aspect ratio
+        width: "64px",
+        height: "76px",
+        flexShrink: 0,
+        borderRadius: "8px",
         overflow: "hidden",
-        background: "#180f24"
+        border: isSelected ? "1.5px solid #ffd700" : "1px solid rgba(255, 255, 255, 0.15)",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.4)"
       }}>
         <img
           src={contestant.image}
           alt={contestant.name}
           style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
             width: "100%",
             height: "100%",
-            objectFit: "cover",
-            transition: "transform 0.5s ease"
+            objectFit: "cover"
           }}
         />
+        {/* SBD Badge góc trên ảnh */}
         <div style={{
           position: "absolute",
-          inset: 0,
-          background: "linear-gradient(180deg, rgba(13, 9, 20, 0) 40%, rgba(13, 9, 20, 0.95) 100%)"
-        }} />
+          top: "2px",
+          left: "2px",
+          background: "rgba(0, 0, 0, 0.8)",
+          borderRadius: "4px",
+          padding: "1px 5px",
+          fontSize: "10px",
+          fontWeight: 800,
+          color: "#ffd700",
+          letterSpacing: "0.5px"
+        }}>
+          #{contestant.sbd}
+        </div>
       </div>
 
-      {/* Info Card Content */}
-      <div style={{ padding: "18px 20px 22px" }}>
+      {/* Thông tin ở giữa (Tên cặp đôi, Tên thí sinh, Tiết mục) */}
+      <div style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
         <div style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: "6px"
+          gap: "6px",
+          marginBottom: "2px"
         }}>
-          <h3 style={{
+          <span style={{
             fontFamily: "var(--font-heading)",
-            fontSize: "22px",
+            fontSize: "16px",
             fontWeight: 800,
             color: isSelected ? "#ffd700" : "#fff",
-            margin: 0
+            lineHeight: 1.2
           }}>
             {contestant.name}
-          </h3>
+          </span>
         </div>
 
-        {/* Member names */}
+        {/* Tên thành viên */}
         <div style={{
-          fontSize: "15px",
+          fontSize: "13px",
           fontWeight: 700,
           color: "#ffc2d1",
-          marginBottom: "8px"
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          marginBottom: "3px"
         }}>
           {contestant.members}
         </div>
 
-        {/* Department tag */}
+        {/* Tiết mục / Phòng ban (rút gọn hiển thị 1 dòng) */}
         <div style={{
-          fontSize: "12px",
+          fontSize: "11px",
           color: "var(--text-muted)",
-          marginBottom: "12px",
-          lineHeight: 1.4
+          display: "flex",
+          alignItems: "center",
+          gap: "4px",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis"
         }}>
-          🏢 {contestant.department}
+          <Music size={11} color="#f5c044" style={{ flexShrink: 0 }} />
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+            {contestant.performance || contestant.department}
+          </span>
         </div>
+      </div>
 
-        {/* Performance & Slogan */}
-        <div style={{
-          background: "rgba(255, 255, 255, 0.04)",
-          borderRadius: "var(--radius-sm)",
-          padding: "10px 12px",
-          marginBottom: "16px",
-          fontSize: "12px",
-          border: "1px solid rgba(255, 255, 255, 0.06)"
-        }}>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            color: "#f5c044",
-            fontWeight: 700,
-            marginBottom: "4px"
-          }}>
-            <Music size={13} />
-            <span>{contestant.performance}</span>
-          </div>
-          <div style={{ fontStyle: "italic", color: "var(--text-secondary)" }}>
-            "{contestant.slogan}"
-          </div>
-        </div>
-
-        {/* Vote Button */}
+      {/* Nút chọn hoặc Checkmark bên phải */}
+      <div style={{ flexShrink: 0, paddingLeft: "4px" }}>
         <button
           type="button"
           disabled={disabled}
@@ -175,26 +130,32 @@ export default function CandidateCard({
             e.stopPropagation();
             if (!disabled) onSelect(contestant.id);
           }}
-          className={isSelected ? "btn-gold w-full" : "btn-primary w-full"}
           style={{
-            padding: "11px 16px",
-            fontSize: "14px",
-            fontWeight: 700,
+            border: "none",
+            borderRadius: "9999px",
+            padding: isSelected ? "6px 14px" : "6px 12px",
+            fontSize: "12px",
+            fontWeight: 800,
+            cursor: disabled ? "not-allowed" : "pointer",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            gap: "8px"
+            gap: "5px",
+            transition: "all 0.2s ease",
+            background: isSelected ? "var(--gold-gradient)" : "rgba(229, 33, 69, 0.2)",
+            color: isSelected ? "#1a0f00" : "#ff8fa3",
+            border: isSelected ? "none" : "1px solid rgba(229, 33, 69, 0.4)",
+            boxShadow: isSelected ? "0 0 12px rgba(245, 192, 68, 0.6)" : "none"
           }}
         >
           {isSelected ? (
             <>
-              <Check size={16} />
-              ĐÃ CHỌN CẶP NÀY
+              <Check size={14} strokeWidth={3} />
+              <span>ĐÃ CHỌN</span>
             </>
           ) : (
             <>
-              <Heart size={16} />
-              Bình Chọn Cho Cặp Này
+              <Heart size={13} />
+              <span>Chọn</span>
             </>
           )}
         </button>

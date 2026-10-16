@@ -278,11 +278,11 @@ export default function App() {
                     Chạm trực tiếp vào ảnh cặp đôi bạn muốn bình chọn:
                   </p>
 
-                  {/* Danh sách 5 cặp đôi (Responsive Grid) */}
+                  {/* Danh sách các cặp đôi (Dạng hàng ngang nhỏ gọn tối ưu lướt trên điện thoại) */}
                   <div style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-                    gap: "16px"
+                    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+                    gap: "10px"
                   }}>
                     {contestants.map((c) => (
                       <CandidateCard
