@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { UserCheck, Building2, KeyRound, AlertCircle, CheckCircle2, Eye, EyeOff, Search } from "lucide-react";
+import { UserCheck, Building2, KeyRound, AlertCircle, CheckCircle2, Eye, EyeOff, Sparkles } from "lucide-react";
 import { DEPARTMENTS } from "../data/initialData";
 
 export default function VoterIdentification({
@@ -13,20 +13,12 @@ export default function VoterIdentification({
   deviceHasVoted
 }) {
   const [showCode, setShowCode] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
 
-  // Lọc nhân viên theo phòng ban đã chọn
+  // Lọc danh sách nhân viên theo phòng ban đã chọn
   const filteredEmployees = useMemo(() => {
-    let list = employees;
-    if (selectedDepartment) {
-      list = list.filter((e) => e.department === selectedDepartment);
-    }
-    if (searchTerm.trim()) {
-      const q = searchTerm.toLowerCase();
-      list = list.filter((e) => e.name.toLowerCase().includes(q) || e.department.toLowerCase().includes(q));
-    }
-    return list;
-  }, [employees, selectedDepartment, searchTerm]);
+    if (!selectedDepartment) return employees;
+    return employees.filter((e) => e.department === selectedDepartment);
+  }, [employees, selectedDepartment]);
 
   // Thông tin nhân viên đang chọn
   const selectedEmp = useMemo(() => {
@@ -37,23 +29,23 @@ export default function VoterIdentification({
     <div
       className="glass-panel"
       style={{
-        padding: "24px",
-        marginBottom: "30px",
-        border: "1px solid rgba(255, 215, 0, 0.28)",
-        background: "rgba(22, 14, 34, 0.82)"
+        padding: "20px 16px",
+        marginBottom: "24px",
+        border: "1px solid rgba(255, 215, 0, 0.3)",
+        background: "rgba(22, 14, 34, 0.88)"
       }}
     >
       <div style={{
         display: "flex",
         alignItems: "center",
         gap: "10px",
-        marginBottom: "16px",
-        paddingBottom: "12px",
+        marginBottom: "14px",
+        paddingBottom: "10px",
         borderBottom: "1px solid rgba(255, 255, 255, 0.08)"
       }}>
         <div style={{
-          width: "32px",
-          height: "32px",
+          width: "28px",
+          height: "28px",
           borderRadius: "50%",
           background: "var(--gold-gradient)",
           color: "#000",
@@ -61,62 +53,60 @@ export default function VoterIdentification({
           alignItems: "center",
           justifyContent: "center",
           fontWeight: 900,
-          fontSize: "15px"
+          fontSize: "14px",
+          flexShrink: 0
         }}>
           1
         </div>
         <h2 style={{
           fontFamily: "var(--font-heading)",
-          fontSize: "20px",
+          fontSize: "18px",
           color: "#fff",
           margin: 0
         }}>
-          Xác Thực Danh Tính Người Bình Chọn
+          Bước 1: Chọn Tên & Xác Thực
         </h2>
-        <span style={{ fontSize: "12px", color: "var(--text-muted)", marginLeft: "auto" }}>
-          (Chống bình chọn hộ)
+        <span style={{ fontSize: "11px", color: "var(--text-muted)", marginLeft: "auto" }}>
+          (Chống vote hộ)
         </span>
       </div>
 
-      {/* Cảnh báo nếu thiết bị này đã từng vote */}
+      {/* Cảnh báo nếu máy này đã vote */}
       {deviceHasVoted && (
         <div style={{
           background: "rgba(239, 68, 68, 0.15)",
           border: "1px solid rgba(239, 68, 68, 0.4)",
           borderRadius: "var(--radius-md)",
-          padding: "12px 16px",
-          marginBottom: "18px",
+          padding: "12px 14px",
+          marginBottom: "16px",
           display: "flex",
           alignItems: "center",
           gap: "10px",
           color: "#fca5a5",
-          fontSize: "14px"
+          fontSize: "13px"
         }}>
           <AlertCircle size={20} color="#ef4444" style={{ flexShrink: 0 }} />
           <div>
-            <strong>Thiết bị này đã hoàn thành lượt bình chọn!</strong> Mỗi người chỉ được vote 1 lần duy nhất trên mỗi thiết bị.
+            <strong>Điện thoại này đã hoàn thành lượt bình chọn!</strong> Mỗi người chỉ được vote 1 lần duy nhất.
           </div>
         </div>
       )}
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-        gap: "18px"
-      }}>
-        {/* Bước 1: Chọn phòng ban */}
+      {/* 3 Trường nhập liệu tối ưu điện thoại */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        {/* 1. Chọn phòng ban */}
         <div>
           <label style={{
             display: "flex",
             alignItems: "center",
-            gap: "8px",
+            gap: "6px",
             fontSize: "13px",
             fontWeight: 700,
             color: "#ffc2d1",
-            marginBottom: "8px"
+            marginBottom: "6px"
           }}>
             <Building2 size={16} color="#f5c044" />
-            1. Chọn Phòng Ban của bạn:
+            1. Phòng Ban của bạn:
           </label>
           <select
             className="custom-select"
@@ -126,6 +116,7 @@ export default function VoterIdentification({
               setSelectedEmployeeId("");
               setAuthCode("");
             }}
+            style={{ minHeight: "46px", fontSize: "15px" }}
           >
             <option value="">-- Tất cả các phòng ban ({DEPARTMENTS.length}) --</option>
             {DEPARTMENTS.map((dept) => (
@@ -136,19 +127,19 @@ export default function VoterIdentification({
           </select>
         </div>
 
-        {/* Bước 2: Chọn Họ và tên */}
+        {/* 2. Chọn Tên */}
         <div>
           <label style={{
             display: "flex",
             alignItems: "center",
-            gap: "8px",
+            gap: "6px",
             fontSize: "13px",
             fontWeight: 700,
             color: "#ffc2d1",
-            marginBottom: "8px"
+            marginBottom: "6px"
           }}>
             <UserCheck size={16} color="#f5c044" />
-            2. Chọn Họ và Tên của bạn:
+            2. Họ và Tên của bạn:
           </label>
           <select
             className="custom-select"
@@ -157,38 +148,40 @@ export default function VoterIdentification({
               setSelectedEmployeeId(e.target.value);
               setAuthCode("");
             }}
-            disabled={filteredEmployees.length === 0}
+            style={{ minHeight: "46px", fontSize: "15px" }}
           >
             <option value="">
-              -- {filteredEmployees.length > 0 ? `Chọn nhân sự (${filteredEmployees.length} người)` : "Không có nhân sự"} --
+              -- Chọn tên của bạn ({filteredEmployees.length} người) --
             </option>
             {filteredEmployees.map((emp) => (
               <option key={emp.id} value={emp.id} disabled={emp.hasVoted}>
-                {emp.name} {emp.hasVoted ? "✔ (Đã vote)" : ""}
+                {emp.name} {emp.hasVoted ? "✔ (Đã bình chọn)" : ""}
               </option>
             ))}
           </select>
         </div>
 
-        {/* Bước 3: Nhập mã bảo mật (4 số cuối SĐT) */}
+        {/* 3. Nhập 4 số cuối SĐT (bật bàn phím số numeric trên điện thoại) */}
         <div>
           <label style={{
             display: "flex",
             alignItems: "center",
-            gap: "8px",
+            gap: "6px",
             fontSize: "13px",
             fontWeight: 700,
             color: "#ffc2d1",
-            marginBottom: "8px"
+            marginBottom: "6px"
           }}>
             <KeyRound size={16} color="#f5c044" />
-            3. Mã bảo mật (4 số cuối SĐT):
+            3. Mã bảo mật (4 số cuối SĐT của bạn):
           </label>
           <div style={{ position: "relative" }}>
             <input
               type={showCode ? "text" : "password"}
+              inputMode="numeric"
+              pattern="[0-9]*"
               className="custom-input"
-              placeholder="Ví dụ: 6868..."
+              placeholder="Nhập 4 số cuối SĐT..."
               maxLength={6}
               value={authCode}
               onChange={(e) => setAuthCode(e.target.value)}
@@ -196,8 +189,9 @@ export default function VoterIdentification({
               style={{
                 letterSpacing: "4px",
                 fontWeight: 800,
-                fontSize: "16px",
-                paddingRight: "44px"
+                fontSize: "18px",
+                paddingRight: "44px",
+                minHeight: "46px"
               }}
             />
             <button
@@ -212,7 +206,7 @@ export default function VoterIdentification({
                 border: "none",
                 color: "var(--text-muted)",
                 cursor: "pointer",
-                padding: "6px",
+                padding: "8px",
                 display: "flex",
                 alignItems: "center"
               }}
@@ -224,57 +218,43 @@ export default function VoterIdentification({
         </div>
       </div>
 
-      {/* Hiển thị trạng thái của người được chọn */}
+      {/* Thông tin trạng thái cử tri */}
       {selectedEmp && (
         <div style={{
-          marginTop: "16px",
-          padding: "12px 16px",
-          borderRadius: "var(--radius-md)",
+          marginTop: "14px",
+          padding: "10px 14px",
+          borderRadius: "var(--radius-sm)",
           background: selectedEmp.hasVoted ? "rgba(239, 68, 68, 0.12)" : "rgba(16, 185, 129, 0.12)",
           border: `1px solid ${selectedEmp.hasVoted ? "rgba(239, 68, 68, 0.35)" : "rgba(16, 185, 129, 0.35)"}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: "10px",
           fontSize: "13px"
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             {selectedEmp.hasVoted ? (
-              <AlertCircle size={18} color="#ef4444" />
+              <AlertCircle size={16} color="#ef4444" />
             ) : (
-              <CheckCircle2 size={18} color="#10b981" />
+              <CheckCircle2 size={16} color="#10b981" />
             )}
-            <span>
-              <strong>{selectedEmp.name}</strong> ({selectedEmp.department})
+            <span style={{ fontWeight: 700, color: "#fff" }}>
+              {selectedEmp.name}
+            </span>
+            <span style={{ color: "var(--text-muted)", fontSize: "12px" }}>
+              ({selectedEmp.department})
             </span>
           </div>
 
-          <div>
+          <div style={{ marginTop: "4px", fontSize: "12px" }}>
             {selectedEmp.hasVoted ? (
               <span style={{ color: "#f87171", fontWeight: 700 }}>
-                Đã bình chọn vào {selectedEmp.votedAt} (Không thể vote lại)
+                Đã bình chọn lúc {selectedEmp.votedAt} (Không thể vote lại)
               </span>
             ) : (
-              <span style={{ color: "#34d399", fontWeight: 700 }}>
-                Sẵn sàng bình chọn (Chưa vote)
+              <span style={{ color: "#34d399", fontWeight: 600 }}>
+                ✔ Sẵn sàng! Vui lòng nhập 4 số cuối SĐT và chọn cặp đôi bên dưới.
               </span>
             )}
           </div>
         </div>
       )}
-
-      {/* Gợi ý hỗ trợ người dùng */}
-      <div style={{
-        marginTop: "12px",
-        fontSize: "12px",
-        color: "var(--text-muted)",
-        display: "flex",
-        alignItems: "center",
-        gap: "6px"
-      }}>
-        <span>💡 <em>Mẹo: Mã bảo mật là 4 chữ số cuối số điện thoại của bạn tại danh sách công ty Nam Hải.</em></span>
-      </div>
     </div>
   );
 }

@@ -8,7 +8,8 @@ const STORAGE_KEYS = {
   AUDIT_LOGS: "namhai_audit_logs",
   CONFIG: "namhai_config",
   DEVICE_ID: "namhai_device_id",
-  DEVICE_VOTED: "namhai_device_has_voted"
+  DEVICE_VOTED: "namhai_device_has_voted",
+  CLOUD_SYNCED: "namhai_cloud_synced"
 };
 
 // Kênh đồng bộ đa tab tức thì (BroadcastChannel)
@@ -38,27 +39,29 @@ export async function getClientIp() {
     const data = await res.json();
     return data.ip || "127.0.0.1";
   } catch {
-    return "Nội bộ / Không xác định";
+    return "Nội bộ / Mạng di động";
   }
 }
 
 // Nhận diện thiết bị người dùng
 export function getDeviceDetails() {
   const ua = navigator.userAgent;
-  let os = "Không xác định";
+  let os = "Thiết bị di động";
   let browser = "Trình duyệt";
 
-  if (/iPhone|iPad|iPod/i.test(ua)) os = "iOS (Apple)";
-  else if (/Android/i.test(ua)) os = "Android";
+  if (/iPhone/i.test(ua)) os = "iPhone (Apple)";
+  else if (/iPad/i.test(ua)) os = "iPad (Apple)";
+  else if (/Android/i.test(ua)) os = "Android Phone";
   else if (/Windows NT/i.test(ua)) os = "Windows PC";
   else if (/Macintosh|Mac OS/i.test(ua)) os = "MacOS";
   else if (/Linux/i.test(ua)) os = "Linux";
 
-  if (/Chrome/i.test(ua) && !/Edge|OPR/i.test(ua)) browser = "Chrome";
+  if (/Zalo/i.test(ua)) browser = "Zalo App";
+  else if (/FBAN|FBAV/i.test(ua)) browser = "Facebook App";
+  else if (/Chrome/i.test(ua) && !/Edge|OPR/i.test(ua)) browser = "Chrome";
   else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = "Safari";
   else if (/Firefox/i.test(ua)) browser = "Firefox";
   else if (/Edge|Edg/i.test(ua)) browser = "Edge";
-  else if (/Zalo/i.test(ua)) browser = "Zalo App";
 
   return `${browser} trên ${os}`;
 }
@@ -138,7 +141,7 @@ function broadcastChange(type, payload) {
   }
 }
 
-// Lắng nghe sự kiện cập nhật thời gian thực
+// Lắng nghe sự kiện cập nhật thời gian thực từ Firestore và BroadcastChannel
 export function subscribeToUpdates(callback) {
   const handleMessage = (event) => {
     if (event && event.data) {
@@ -157,15 +160,37 @@ export function subscribeToUpdates(callback) {
   }
   window.addEventListener("storage", handleStorage);
 
-  // Thử kết nối Firebase Firestore nếu có
+  // KẾT NỐI REALTIME TỚI FIREBASE CLOUD FIRESTORE
   let unsubscribeFirebase = null;
   const fb = initFirebase();
   if (fb && fb.db) {
     try {
       const docRef = doc(fb.db, "events", "namhai_gala_2026");
+
+      // Khởi tạo dữ liệu lên Firestore nếu là lần đầu tiên
+      getDoc(docRef).then((snapshot) => {
+        if (!snapshot.exists()) {
+          console.log("Khởi tạo tài liệu sự kiện ban đầu lên Firestore...");
+          setDoc(docRef, {
+            contestants: INITIAL_CONTESTANTS,
+            employees: INITIAL_EMPLOYEES,
+            auditLogs: [],
+            config: APP_CONFIG,
+            lastUpdated: Date.now()
+          }).catch((err) => {
+            console.warn("Lưu ban đầu lên Firestore lỗi (cần bật Test Mode trên Firebase):", err);
+          });
+        }
+      }).catch((e) => {
+        console.warn("Kiểm tra Firestore ban đầu:", e);
+      });
+
+      // Lắng nghe thay đổi Realtime (bất kỳ ai vote ở hội trường, máy chiếu sân khấu nhảy số ngay)
       unsubscribeFirebase = onSnapshot(docRef, (snapshot) => {
         if (snapshot.exists()) {
           const cloudData = snapshot.data();
+          console.log("Đã nhận dữ liệu realtime từ Firebase Cloud Firestore!");
+          
           if (cloudData.contestants) {
             localStorage.setItem(STORAGE_KEYS.CONTESTANTS, JSON.stringify(cloudData.contestants));
           }
@@ -180,9 +205,11 @@ export function subscribeToUpdates(callback) {
           }
           callback({ type: "FIREBASE_SYNC", payload: cloudData });
         }
+      }, (error) => {
+        console.warn("Lỗi listener Firestore:", error.message);
       });
     } catch (err) {
-      console.warn("Lỗi lắng nghe Firebase:", err);
+      console.warn("Lỗi thiết lập Firebase Listener:", err);
     }
   }
 
@@ -309,7 +336,7 @@ export async function submitVote({ employeeId, coupleId, authCode }) {
     ticketId: logEntry.id
   }));
 
-  // Đồng bộ lên Firebase Firestore nếu đã cấu hình
+  // ĐỒNG BỘ LÊN GOOGLE CLOUD FIRESTORE REALTIME
   const fb = initFirebase();
   if (fb && fb.db) {
     try {
@@ -321,12 +348,13 @@ export async function submitVote({ employeeId, coupleId, authCode }) {
         config,
         lastUpdated: Date.now()
       }, { merge: true });
+      console.log("✔ Đã lưu phiếu bầu thành công lên Firebase Cloud Firestore!");
     } catch (fbErr) {
-      console.warn("Lưu lên Firebase thất bại (đã lưu local):", fbErr);
+      console.warn("Lưu lên Firebase thất bại (đã lưu local an toàn):", fbErr);
     }
   }
 
-  // Bắn thông báo cập nhật
+  // Bắn thông báo cập nhật tới các tab đang mở
   broadcastChange("VOTE_CAST", {
     voterName: employee.name,
     coupleName: contestants[coupleIndex].name,
@@ -371,6 +399,7 @@ export async function resetAllData() {
         config: APP_CONFIG,
         lastUpdated: Date.now()
       });
+      console.log("✔ Đã reset dữ liệu trên Firebase Cloud Firestore!");
     } catch (err) {
       console.warn("Lỗi reset Firebase:", err);
     }

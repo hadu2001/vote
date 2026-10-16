@@ -1,9 +1,9 @@
 import React from "react";
-import { Crown, Heart, ShieldAlert } from "lucide-react";
+import { Crown, ShieldAlert } from "lucide-react";
 
 export default function Header() {
   return (
-    <div style={{ marginBottom: "28px" }}>
+    <div style={{ marginBottom: "20px" }}>
       {/* Banner Card */}
       <div
         className="glass-panel"
@@ -12,13 +12,13 @@ export default function Header() {
           overflow: "hidden",
           borderRadius: "var(--radius-lg)",
           border: "1px solid rgba(255, 215, 0, 0.3)",
-          boxShadow: "0 15px 40px rgba(0, 0, 0, 0.6), 0 0 25px rgba(229, 33, 69, 0.25)"
+          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(229, 33, 69, 0.2)"
         }}
       >
         <div style={{
           position: "relative",
           width: "100%",
-          maxHeight: "340px",
+          maxHeight: "220px",
           overflow: "hidden"
         }}>
           <img
@@ -32,74 +32,73 @@ export default function Header() {
               filter: "brightness(0.92)"
             }}
           />
-          {/* Subtle gradient overlay at bottom */}
           <div style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(180deg, rgba(13,9,20,0.1) 0%, rgba(13,9,20,0.85) 95%)"
+            background: "linear-gradient(180deg, rgba(13,9,20,0.05) 0%, rgba(13,9,20,0.85) 95%)"
           }} />
         </div>
 
         {/* Header content below image */}
-        <div style={{ padding: "20px 24px 24px", textAlign: "center", position: "relative" }}>
+        <div style={{ padding: "16px 18px 20px", textAlign: "center", position: "relative" }}>
           <div style={{
             display: "inline-flex",
             alignItems: "center",
-            gap: "8px",
-            background: "rgba(229, 33, 69, 0.18)",
+            gap: "6px",
+            background: "rgba(229, 33, 69, 0.2)",
             border: "1px solid rgba(229, 33, 69, 0.4)",
-            padding: "6px 16px",
+            padding: "4px 14px",
             borderRadius: "9999px",
             color: "#ff8fa3",
-            fontSize: "13px",
+            fontSize: "12px",
             fontWeight: 800,
-            marginBottom: "12px",
-            letterSpacing: "1px"
+            marginBottom: "8px",
+            letterSpacing: "0.5px"
           }}>
-            <Crown size={15} color="#ffd700" />
-            CHÀO MỪNG NGÀY PHỤ NỮ VIỆT NAM 20/10
+            <Crown size={14} color="#ffd700" />
+            GALA 20/10 NAM HẢI GROUP
           </div>
 
           <h1 style={{
             fontFamily: "var(--font-heading)",
-            fontSize: "clamp(24px, 4vw, 38px)",
+            fontSize: "clamp(20px, 4.5vw, 32px)",
             fontWeight: 900,
             lineHeight: 1.25,
-            marginBottom: "10px",
-            letterSpacing: "0.5px"
+            marginBottom: "8px"
           }}>
-            CẶP ĐÔI ỨNG XỬ <span className="text-gold-gradient">NAM HẢI GROUP 2026 ♕</span>
+            CẶP ĐÔI ỨNG XỬ <span className="text-gold-gradient">2026 ♕</span>
           </h1>
 
           <p style={{
             color: "#ffc2d1",
-            fontSize: "clamp(14px, 2vw, 17px)",
+            fontSize: "clamp(13px, 2.5vw, 15px)",
             fontWeight: 600,
-            maxWidth: "750px",
-            margin: "0 auto 16px",
-            lineHeight: 1.5
+            maxWidth: "600px",
+            margin: "0 auto 12px",
+            lineHeight: 1.4
           }}>
-            "Hãy bình chọn cho cặp đôi bạn thấy xứng đáng nhất trong đêm Gala 20/10"
+            "Hãy bình chọn cho cặp đôi bạn thấy ấn tượng và xứng đáng nhất"
           </p>
 
           {/* Quy định bảo mật */}
           <div style={{
-            maxWidth: "680px",
+            maxWidth: "550px",
             margin: "0 auto",
             background: "rgba(255, 255, 255, 0.04)",
             border: "1px dashed rgba(255, 215, 0, 0.3)",
-            borderRadius: "var(--radius-md)",
-            padding: "10px 16px",
+            borderRadius: "var(--radius-sm)",
+            padding: "8px 12px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "10px",
-            fontSize: "13px",
-            color: "var(--text-secondary)"
+            gap: "8px",
+            fontSize: "12px",
+            color: "var(--text-secondary)",
+            textAlign: "left"
           }}>
-            <ShieldAlert size={18} color="#f5c044" style={{ flexShrink: 0 }} />
+            <ShieldAlert size={16} color="#f5c044" style={{ flexShrink: 0 }} />
             <span>
-              <strong>Lưu ý:</strong> Mỗi cán bộ nhân viên bình chọn <strong>1 lần duy nhất</strong>. Vui lòng chọn đúng tên và nhập <strong>4 số cuối SĐT</strong> để chống mạo danh.
+              Mỗi cán bộ nhân viên bình chọn <strong>1 lần duy nhất</strong>. Nhập <strong>4 số cuối SĐT</strong> để bảo vệ danh tính, chống bình chọn hộ.
             </span>
           </div>
         </div>
