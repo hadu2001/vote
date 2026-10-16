@@ -3,7 +3,6 @@ import {
   Lock,
   Unlock,
   Power,
-  RotateCcw,
   Download,
   Users,
   FileSpreadsheet,
@@ -24,7 +23,6 @@ export default function AdminDashboard({
   contestants,
   auditLogs,
   onToggleStatus,
-  onResetData,
   onUnlockDevice
 }) {
   const [pinInput, setPinInput] = useState("");
@@ -256,33 +254,9 @@ export default function AdminDashboard({
             Mở Khóa Máy Này
           </button>
 
-          {/* Nút Reset Toàn Bộ */}
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm("BẠN CÓ CHẮC CHẮN MUỐN XÓA TOÀN BỘ DỮ LIỆU ĐÃ VOTE? Hành động này không thể hoàn tác!")) {
-                onResetData();
-              }
-            }}
-            style={{
-              padding: "10px 14px",
-              fontSize: "13px",
-              background: "rgba(239, 68, 68, 0.2)",
-              color: "#fca5a5",
-              border: "1px solid rgba(239, 68, 68, 0.4)",
-              borderRadius: "var(--radius-full)",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px"
-            }}
-            title="Dành cho Admin xóa lượt test trước giờ G"
-          >
-            <RotateCcw size={15} />
-            Reset Dữ Liệu
-          </button>
         </div>
       </div>
+
 
       {/* Admin Subtabs */}
       <div style={{

@@ -16,7 +16,6 @@ import {
   subscribeToUpdates,
   submitVote,
   toggleVotingStatus,
-  resetAllData,
   unlockCurrentDevice
 } from "./services/storageService";
 import { AlertCircle, Heart, Sparkles, Check, CheckCircle2 } from "lucide-react";
@@ -180,17 +179,6 @@ export default function App() {
     loadData();
   };
 
-  // Reset dữ liệu từ Admin
-  const handleResetData = async () => {
-    await resetAllData();
-    setVoteSuccessData(null);
-    setDeviceHasVoted(false);
-    setSelectedEmployeeId("");
-    setSelectedCoupleId("");
-    setAuthCode("");
-    loadData();
-  };
-
   const isReadyToSubmit = selectedCoupleId && selectedEmployeeId && authCode.trim() && config.isOpen && !deviceHasVoted;
 
   return (
@@ -334,7 +322,6 @@ export default function App() {
             contestants={contestants}
             auditLogs={auditLogs}
             onToggleStatus={handleToggleStatus}
-            onResetData={handleResetData}
             onUnlockDevice={handleUnlockDevice}
           />
         )}

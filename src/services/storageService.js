@@ -8,8 +8,7 @@ const STORAGE_KEYS = {
   AUDIT_LOGS: "namhai_audit_logs",
   CONFIG: "namhai_config",
   DEVICE_ID: "namhai_device_id",
-  DEVICE_VOTED: "namhai_device_has_voted",
-  CLOUD_SYNCED: "namhai_cloud_synced"
+  DEVICE_VOTED: "namhai_device_has_voted"
 };
 
 // Kênh đồng bộ đa tab tức thì (BroadcastChannel)
@@ -94,22 +93,21 @@ export function getContestants() {
       return INITIAL_CONTESTANTS;
     }
   }
-  localStorage.setItem(STORAGE_KEYS.CONTESTANTS, JSON.stringify(INITIAL_CONTESTANTS));
   return INITIAL_CONTESTANTS;
 }
 
-// Lấy danh sách nhân viên & trạng thái đã vote
+// Lấy danh sách nhân viên (được đồng bộ trực tiếp từ Firebase Cloud Firestore)
 export function getEmployees() {
   const saved = localStorage.getItem(STORAGE_KEYS.EMPLOYEES);
   if (saved) {
     try {
-      return JSON.parse(saved);
+      const list = JSON.parse(saved);
+      if (Array.isArray(list) && list.length > 0) return list;
     } catch {
-      return INITIAL_EMPLOYEES;
+      // fallback
     }
   }
-  localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(INITIAL_EMPLOYEES));
-  return INITIAL_EMPLOYEES;
+  return [];
 }
 
 // Lấy danh sách Audit Log
@@ -167,30 +165,32 @@ export function subscribeToUpdates(callback) {
     try {
       const docRef = doc(fb.db, "events", "namhai_gala_2026");
 
-      // Khởi tạo dữ liệu lên Firestore nếu là lần đầu tiên
+      // Tải ngay dữ liệu mới nhất từ Firebase về bộ nhớ
       getDoc(docRef).then((snapshot) => {
-        if (!snapshot.exists()) {
-          console.log("Khởi tạo tài liệu sự kiện ban đầu lên Firestore...");
-          setDoc(docRef, {
-            contestants: INITIAL_CONTESTANTS,
-            employees: INITIAL_EMPLOYEES,
-            auditLogs: [],
-            config: APP_CONFIG,
-            lastUpdated: Date.now()
-          }).catch((err) => {
-            console.warn("Lưu ban đầu lên Firestore lỗi (cần bật Test Mode trên Firebase):", err);
-          });
+        if (snapshot.exists()) {
+          const cloudData = snapshot.data();
+          if (cloudData.contestants) {
+            localStorage.setItem(STORAGE_KEYS.CONTESTANTS, JSON.stringify(cloudData.contestants));
+          }
+          if (cloudData.employees) {
+            localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(cloudData.employees));
+          }
+          if (cloudData.auditLogs) {
+            localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(cloudData.auditLogs));
+          }
+          if (cloudData.config) {
+            localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(cloudData.config));
+          }
+          callback({ type: "FIREBASE_INITIAL_LOAD", payload: cloudData });
         }
       }).catch((e) => {
-        console.warn("Kiểm tra Firestore ban đầu:", e);
+        console.warn("Lỗi lấy dữ liệu ban đầu từ Firestore:", e);
       });
 
-      // Lắng nghe thay đổi Realtime (bất kỳ ai vote ở hội trường, máy chiếu sân khấu nhảy số ngay)
+      // Lắng nghe thay đổi Realtime (khi có người vote hoặc khi admin sửa trên Firebase Console)
       unsubscribeFirebase = onSnapshot(docRef, (snapshot) => {
         if (snapshot.exists()) {
           const cloudData = snapshot.data();
-          console.log("Đã nhận dữ liệu realtime từ Firebase Cloud Firestore!");
-          
           if (cloudData.contestants) {
             localStorage.setItem(STORAGE_KEYS.CONTESTANTS, JSON.stringify(cloudData.contestants));
           }
@@ -348,7 +348,14 @@ export async function submitVote({ employeeId, coupleId, authCode }) {
         config,
         lastUpdated: Date.now()
       }, { merge: true });
-      console.log("✔ Đã lưu phiếu bầu thành công lên Firebase Cloud Firestore!");
+
+      // Cập nhật trạng thái hasVoted trong document riêng lẻ của collection employees
+      const empDocRef = doc(fb.db, "employees", employee.id);
+      await setDoc(empDocRef, {
+        hasVoted: true,
+        votedAt: timeFormatted,
+        votedCoupleId: coupleId
+      }, { merge: true });
     } catch (fbErr) {
       console.warn("Lưu lên Firebase thất bại (đã lưu local an toàn):", fbErr);
     }
@@ -373,42 +380,6 @@ export async function submitVote({ employeeId, coupleId, authCode }) {
   };
 }
 
-// Reset toàn bộ dữ liệu (Chỉ dành cho Admin kiểm thử trước giờ G)
-export async function resetAllData() {
-  localStorage.removeItem(STORAGE_KEYS.CONTESTANTS);
-  localStorage.removeItem(STORAGE_KEYS.EMPLOYEES);
-  localStorage.removeItem(STORAGE_KEYS.AUDIT_LOGS);
-  localStorage.removeItem(STORAGE_KEYS.DEVICE_VOTED);
-  localStorage.removeItem("namhai_my_vote");
-
-  const freshContestants = INITIAL_CONTESTANTS.map(c => ({ ...c, votes: 0 }));
-  const freshEmployees = INITIAL_EMPLOYEES.map(e => ({ ...e, hasVoted: false, votedAt: null, votedCoupleId: null }));
-
-  localStorage.setItem(STORAGE_KEYS.CONTESTANTS, JSON.stringify(freshContestants));
-  localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(freshEmployees));
-  localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify([]));
-
-  const fb = initFirebase();
-  if (fb && fb.db) {
-    try {
-      const docRef = doc(fb.db, "events", "namhai_gala_2026");
-      await setDoc(docRef, {
-        contestants: freshContestants,
-        employees: freshEmployees,
-        auditLogs: [],
-        config: APP_CONFIG,
-        lastUpdated: Date.now()
-      });
-      console.log("✔ Đã reset dữ liệu trên Firebase Cloud Firestore!");
-    } catch (err) {
-      console.warn("Lỗi reset Firebase:", err);
-    }
-  }
-
-  broadcastChange("DATA_RESET", {});
-  return true;
-}
-
 // Bật / Tắt cổng bình chọn
 export async function toggleVotingStatus(isOpen) {
   const config = getConfig();
@@ -429,7 +400,7 @@ export async function toggleVotingStatus(isOpen) {
   return config;
 }
 
-// Mở khóa thiết bị hiện tại (Chỉ dùng khi Admin cho phép vote thử trên cùng máy)
+// Mở khóa thiết bị hiện tại (Chỉ dùng khi Admin cho phép test trên cùng máy)
 export function unlockCurrentDevice() {
   localStorage.removeItem(STORAGE_KEYS.DEVICE_VOTED);
   localStorage.removeItem("namhai_my_vote");
