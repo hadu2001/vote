@@ -210,7 +210,7 @@ export default function AdminDashboard({
             <input
               type="password"
               className="custom-input"
-              placeholder="Nhập mã PIN (300803)"
+              placeholder="Nhập mã PIN "
               value={pinInput}
               onChange={(e) => setPinInput(e.target.value)}
               style={{
@@ -755,7 +755,7 @@ export default function AdminDashboard({
                   <input
                     type="password"
                     className="custom-input"
-                    placeholder="Nhập: admin123"
+                    placeholder="Nhập: "
                     value={secondaryPin}
                     onChange={(e) => setSecondaryPin(e.target.value)}
                     style={{
