@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Trophy, Crown, Flame, BarChart3, Maximize, Minimize, Users, Sparkles, RefreshCw } from "lucide-react";
+import { getAssetUrl } from "../utils/assets";
 
 export default function LiveLeaderboard({
   contestants,
@@ -186,7 +187,7 @@ export default function LiveLeaderboard({
           <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
             <div style={{ position: "relative" }}>
               <img
-                src={top1.image}
+                src={getAssetUrl(top1.image)}
                 alt={top1.name}
                 style={{
                   width: "90px",
@@ -330,7 +331,7 @@ export default function LiveLeaderboard({
                     </div>
 
                     <img
-                      src={c.image}
+                      src={getAssetUrl(c.image)}
                       alt={c.name}
                       style={{
                         width: "48px",

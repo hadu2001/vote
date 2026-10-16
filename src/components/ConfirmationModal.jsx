@@ -1,5 +1,6 @@
 import React from "react";
 import { AlertTriangle, CheckCircle, X, ShieldCheck } from "lucide-react";
+import { getAssetUrl } from "../utils/assets";
 
 export default function ConfirmationModal({
   isOpen,
@@ -122,7 +123,7 @@ export default function ConfirmationModal({
           marginBottom: "20px"
         }}>
           <img
-            src={contestant.image}
+            src={getAssetUrl(contestant.image)}
             alt={contestant.name}
             style={{
               width: "65px",

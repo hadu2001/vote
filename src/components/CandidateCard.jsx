@@ -1,5 +1,6 @@
 import React from "react";
 import { Crown, Heart, Check, Music } from "lucide-react";
+import { getAssetUrl } from "../utils/assets";
 
 export default function CandidateCard({
   contestant,
@@ -46,7 +47,7 @@ export default function CandidateCard({
         boxShadow: "0 2px 6px rgba(0,0,0,0.4)"
       }}>
         <img
-          src={contestant.image}
+          src={getAssetUrl(contestant.image)}
           alt={contestant.name}
           style={{
             width: "100%",

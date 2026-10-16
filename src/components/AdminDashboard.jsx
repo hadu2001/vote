@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { DEPARTMENTS } from "../data/initialData";
 import { getFirebaseConfig } from "../services/firebase";
+import { getAssetUrl } from "../utils/assets";
 
 export default function AdminDashboard({
   config,
@@ -433,7 +434,7 @@ export default function AdminDashboard({
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                     <img
-                      src={c.image}
+                      src={getAssetUrl(c.image)}
                       alt={c.name}
                       style={{ width: "40px", height: "48px", objectFit: "cover", borderRadius: "4px" }}
                     />

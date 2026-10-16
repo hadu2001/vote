@@ -1,5 +1,6 @@
 import React from "react";
 import { Crown, ShieldAlert } from "lucide-react";
+import { getAssetUrl } from "../utils/assets";
 
 export default function Header() {
   return (
@@ -22,7 +23,7 @@ export default function Header() {
           overflow: "hidden"
         }}>
           <img
-            src="/banner.jpg"
+            src={getAssetUrl("/banner.jpg")}
             alt="Nam Hải Group Gala 20/10"
             style={{
               width: "100%",
