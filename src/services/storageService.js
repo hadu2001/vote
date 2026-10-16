@@ -1,6 +1,6 @@
 import { INITIAL_CONTESTANTS, INITIAL_EMPLOYEES, APP_CONFIG } from "../data/initialData";
 import { initFirebase } from "./firebase";
-import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot, collection, getDocs, writeBatch } from "firebase/firestore";
 
 const STORAGE_KEYS = {
   CONTESTANTS: "namhai_contestants",
@@ -160,42 +160,35 @@ export function subscribeToUpdates(callback) {
 
   // KẾT NỐI REALTIME TỚI FIREBASE CLOUD FIRESTORE
   let unsubscribeFirebase = null;
+  let unsubscribeEmployees = null;
   const fb = initFirebase();
   if (fb && fb.db) {
     try {
       const docRef = doc(fb.db, "events", "namhai_gala_2026");
+      const employeesCol = collection(fb.db, "employees");
 
-      // Tải ngay dữ liệu mới nhất từ Firebase về bộ nhớ
-      getDoc(docRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          const cloudData = snapshot.data();
-          if (cloudData.contestants) {
-            localStorage.setItem(STORAGE_KEYS.CONTESTANTS, JSON.stringify(cloudData.contestants));
-          }
-          if (cloudData.employees) {
-            localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(cloudData.employees));
-          }
-          if (cloudData.auditLogs) {
-            localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(cloudData.auditLogs));
-          }
-          if (cloudData.config) {
-            localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(cloudData.config));
-          }
-          callback({ type: "FIREBASE_INITIAL_LOAD", payload: cloudData });
+      // 1. Lắng nghe thay đổi trực tiếp từ Collection 'employees' (khi bạn sửa trực tiếp trên Firebase Console)
+      unsubscribeEmployees = onSnapshot(employeesCol, (snapshot) => {
+        if (!snapshot.empty) {
+          const list = [];
+          snapshot.forEach((docSnap) => {
+            list.push(docSnap.data());
+          });
+          list.sort((a, b) => (a.id || "").localeCompare(b.id || ""));
+          localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(list));
+          console.log("✔ Đã đồng bộ realtime 100 nhân viên từ Collection employees trên Firebase!");
+          callback({ type: "EMPLOYEES_REALTIME_SYNC", payload: list });
         }
-      }).catch((e) => {
-        console.warn("Lỗi lấy dữ liệu ban đầu từ Firestore:", e);
+      }, (err) => {
+        console.warn("Lỗi listener collection employees:", err.message);
       });
 
-      // Lắng nghe thay đổi Realtime (khi có người vote hoặc khi admin sửa trên Firebase Console)
+      // 2. Lắng nghe thay đổi từ Document sự kiện (số vote 5 cặp đôi, audit logs, config)
       unsubscribeFirebase = onSnapshot(docRef, (snapshot) => {
         if (snapshot.exists()) {
           const cloudData = snapshot.data();
           if (cloudData.contestants) {
             localStorage.setItem(STORAGE_KEYS.CONTESTANTS, JSON.stringify(cloudData.contestants));
-          }
-          if (cloudData.employees) {
-            localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(cloudData.employees));
           }
           if (cloudData.auditLogs) {
             localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(cloudData.auditLogs));
@@ -206,7 +199,7 @@ export function subscribeToUpdates(callback) {
           callback({ type: "FIREBASE_SYNC", payload: cloudData });
         }
       }, (error) => {
-        console.warn("Lỗi listener Firestore:", error.message);
+        console.warn("Lỗi listener Firestore docRef:", error.message);
       });
     } catch (err) {
       console.warn("Lỗi thiết lập Firebase Listener:", err);
@@ -221,7 +214,11 @@ export function subscribeToUpdates(callback) {
     if (unsubscribeFirebase) {
       unsubscribeFirebase();
     }
+    if (unsubscribeEmployees) {
+      unsubscribeEmployees();
+    }
   };
+
 }
 
 // Xử lý gửi phiếu bình chọn với cơ chế bảo mật đa lớp
@@ -343,7 +340,6 @@ export async function submitVote({ employeeId, coupleId, authCode }) {
       const docRef = doc(fb.db, "events", "namhai_gala_2026");
       await setDoc(docRef, {
         contestants,
-        employees,
         auditLogs,
         config,
         lastUpdated: Date.now()
@@ -406,3 +402,77 @@ export function unlockCurrentDevice() {
   localStorage.removeItem("namhai_my_vote");
   return true;
 }
+
+// Reset toàn bộ dữ liệu bình chọn về 0 (Yêu cầu mật khẩu cấp 2: admin123)
+export async function resetAllVoteData(secondaryPassword) {
+  if (!secondaryPassword || secondaryPassword.trim() !== "admin123") {
+    return {
+      success: false,
+      message: "Mật khẩu cấp 2 không chính xác! Thao tác reset bị từ chối."
+    };
+  }
+
+  // 1. Đưa số phiếu 5 cặp đôi về 0
+  const contestants = getContestants().map((c) => ({
+    ...c,
+    votes: 0
+  }));
+
+  // 2. Xóa danh sách nhật ký kiểm toán (Audit Logs)
+  const auditLogs = [];
+
+  // 3. Đưa toàn bộ nhân sự về trạng thái chưa bình chọn
+  const employees = getEmployees().map((e) => ({
+    ...e,
+    hasVoted: false,
+    votedAt: null,
+    votedCoupleId: null
+  }));
+
+  // 4. Cập nhật LocalStorage
+  localStorage.setItem(STORAGE_KEYS.CONTESTANTS, JSON.stringify(contestants));
+  localStorage.setItem(STORAGE_KEYS.AUDIT_LOGS, JSON.stringify(auditLogs));
+  localStorage.setItem(STORAGE_KEYS.EMPLOYEES, JSON.stringify(employees));
+  localStorage.removeItem(STORAGE_KEYS.DEVICE_VOTED);
+  localStorage.removeItem("namhai_my_vote");
+
+  // 5. Cập nhật Firebase Cloud Firestore Realtime
+  const fb = initFirebase();
+  if (fb && fb.db) {
+    try {
+      const batch = writeBatch(fb.db);
+
+      // Reset document sự kiện (số vote 5 cặp đôi, audit logs)
+      const eventDocRef = doc(fb.db, "events", "namhai_gala_2026");
+      batch.set(eventDocRef, {
+        contestants,
+        auditLogs: [],
+        lastUpdated: Date.now()
+      }, { merge: true });
+
+      // Reset toàn bộ tài liệu nhân sự trong collection employees
+      const empSnap = await getDocs(collection(fb.db, "employees"));
+      empSnap.forEach((docItem) => {
+        batch.update(docItem.ref, {
+          hasVoted: false,
+          votedAt: null,
+          votedCoupleId: null
+        });
+      });
+
+      await batch.commit();
+      console.log("✔ Đã reset toàn bộ dữ liệu trên Firebase Firestore về trạng thái 0 phiếu!");
+    } catch (fbErr) {
+      console.error("Lỗi khi reset Firebase Firestore:", fbErr);
+    }
+  }
+
+  // 6. Phát tín hiệu đa tab
+  broadcastChange("RESET_ALL_VOTES", { contestants, employees });
+
+  return {
+    success: true,
+    message: "Đã xóa toàn bộ dữ liệu vote thử nghiệm và đưa hệ thống về 0 phiếu thành công!"
+  };
+}
+

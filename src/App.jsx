@@ -16,7 +16,8 @@ import {
   subscribeToUpdates,
   submitVote,
   toggleVotingStatus,
-  unlockCurrentDevice
+  unlockCurrentDevice,
+  resetAllVoteData
 } from "./services/storageService";
 import { AlertCircle, Heart, Sparkles, Check, CheckCircle2 } from "lucide-react";
 
@@ -179,6 +180,21 @@ export default function App() {
     loadData();
   };
 
+  // Reset toàn bộ dữ liệu bình chọn (Yêu cầu mật khẩu cấp 2: admin123)
+  const handleResetVotes = async (secondaryPassword) => {
+    const result = await resetAllVoteData(secondaryPassword);
+    if (result.success) {
+      loadData();
+      setVoteSuccessData(null);
+      setSelectedEmployeeId("");
+      setSelectedCoupleId("");
+      setAuthCode("");
+      setSelectedDepartment("");
+      setDeviceHasVoted(false);
+    }
+    return result;
+  };
+
   const isReadyToSubmit = selectedCoupleId && selectedEmployeeId && authCode.trim() && config.isOpen && !deviceHasVoted;
 
   return (
@@ -323,6 +339,7 @@ export default function App() {
             auditLogs={auditLogs}
             onToggleStatus={handleToggleStatus}
             onUnlockDevice={handleUnlockDevice}
+            onResetVotes={handleResetVotes}
           />
         )}
       </main>

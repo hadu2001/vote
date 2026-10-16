@@ -25,13 +25,14 @@
    - Hỗ trợ chế độ **Toàn màn hình (Fullscreen)** chỉ với 1 click.
 
 4. **Bảng Điều Khiển Ban Tổ Chức (Admin Dashboard)**:
-   - Bảo vệ bằng mã PIN quản trị (Mặc định: **`2010`**).
+   - Bảo vệ bằng mã PIN quản trị (Mã: **`300803`**).
+   - **Reset dữ liệu bình chọn**: Reset toàn bộ số vote test về 0 cho 5 cặp đôi & 100 nhân viên (Yêu cầu mật khẩu cấp 2: **`admin123`** để chống bấm nhầm).
    - **Bật / Tắt cổng bình chọn**: MC hô kết thúc giờ bình chọn là khóa cổng ngay lập tức.
    - **Theo dõi tiến độ**: Xem tỷ lệ tham gia theo từng phòng ban trong công ty.
    - **Kiểm tra danh sách 100 nhân sự**: Lọc xem ai đã vote lúc mấy giờ, ai chưa vote.
    - **Tra cứu Audit Log**: Minh bạch 100%, giải quyết nhanh chóng mọi nghi vấn mạo danh.
    - **Xuất file Excel (CSV)**: Tải toàn bộ kết quả kiểm phiếu về máy để báo cáo Ban Lãnh Đạo.
-   - **Tích hợp Firebase Firestore**: Nhập trực tiếp cấu hình Firebase trên giao diện để đồng bộ đám mây mà không cần sửa code.
+   - **Tích hợp Firebase Cloud Firestore**: Đồng bộ đa thiết bị tức thì (Realtime 0.1s).
 
 ---
 

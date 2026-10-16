@@ -12,7 +12,10 @@ import {
   XCircle,
   Database,
   ExternalLink,
-  Smartphone
+  Smartphone,
+  RotateCcw,
+  AlertTriangle,
+  ShieldAlert
 } from "lucide-react";
 import { DEPARTMENTS } from "../data/initialData";
 import { getFirebaseConfig } from "../services/firebase";
@@ -23,12 +26,20 @@ export default function AdminDashboard({
   contestants,
   auditLogs,
   onToggleStatus,
-  onUnlockDevice
+  onUnlockDevice,
+  onResetVotes
 }) {
   const [pinInput, setPinInput] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authError, setAuthError] = useState("");
   const [activeAdminTab, setActiveAdminTab] = useState("overview"); // overview, employees, audit, firebase
+
+  // Trạng thái modal Reset Dữ Liệu (Mật khẩu cấp 2)
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [secondaryPin, setSecondaryPin] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
 
   // Bộ lọc danh sách nhân viên
   const [filterDept, setFilterDept] = useState("");
@@ -44,11 +55,48 @@ export default function AdminDashboard({
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (pinInput.trim() === config.defaultAdminPin || pinInput.trim() === "2010" || pinInput.trim() === "admin") {
+    if (pinInput.trim() === "300803" || pinInput.trim() === config.defaultAdminPin) {
       setIsAuthenticated(true);
       setAuthError("");
     } else {
-      setAuthError("Mã PIN quản trị không chính xác! (Mặc định: 2010)");
+      setAuthError("Mã PIN quản trị không chính xác! (Chỉ đúng mã 300803 mới truy cập được)");
+    }
+  };
+
+  // Xác nhận Reset dữ liệu với mật khẩu cấp 2: admin123
+  const handleConfirmReset = async (e) => {
+    e.preventDefault();
+    setResetError("");
+    setResetSuccess("");
+
+    if (!secondaryPin.trim()) {
+      setResetError("Vui lòng nhập mật khẩu cấp 2!");
+      return;
+    }
+
+    if (secondaryPin.trim() !== "admin123") {
+      setResetError("Mật khẩu cấp 2 không chính xác! (Bắt buộc: admin123)");
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const res = await onResetVotes(secondaryPin.trim());
+      if (res && res.success) {
+        setResetSuccess(res.message || "Đã reset toàn bộ dữ liệu bình chọn về 0 thành công!");
+        setTimeout(() => {
+          setIsResetModalOpen(false);
+          setSecondaryPin("");
+          setResetSuccess("");
+          setIsResetting(false);
+        }, 1200);
+      } else {
+        setResetError(res?.message || "Có lỗi xảy ra khi reset.");
+        setIsResetting(false);
+      }
+    } catch (err) {
+      setResetError("Lỗi kết nối khi reset: " + err.message);
+      setIsResetting(false);
     }
   };
 
@@ -162,7 +210,7 @@ export default function AdminDashboard({
             <input
               type="password"
               className="custom-input"
-              placeholder="Nhập mã PIN (Mặc định: 2010)"
+              placeholder="Nhập mã PIN (300803)"
               value={pinInput}
               onChange={(e) => setPinInput(e.target.value)}
               style={{
@@ -252,6 +300,35 @@ export default function AdminDashboard({
           >
             <Smartphone size={16} />
             Mở Khóa Máy Này
+          </button>
+
+          {/* Nút Reset Dữ Liệu Bình Chọn (Bảo vệ bởi mật khẩu cấp 2) */}
+          <button
+            type="button"
+            onClick={() => {
+              setResetError("");
+              setResetSuccess("");
+              setSecondaryPin("");
+              setIsResetModalOpen(true);
+            }}
+            style={{
+              padding: "10px 16px",
+              fontSize: "13px",
+              background: "rgba(239, 68, 68, 0.2)",
+              color: "#fca5a5",
+              border: "1px solid rgba(239, 68, 68, 0.5)",
+              borderRadius: "var(--radius-sm)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              cursor: "pointer",
+              fontWeight: 700,
+              transition: "all 0.2s ease"
+            }}
+            title="Xóa toàn bộ kết quả vote thử nghiệm để chuẩn bị cho cuộc thi chính thức"
+          >
+            <RotateCcw size={16} />
+            Reset Dữ Liệu Bình Chọn
           </button>
 
         </div>
@@ -602,6 +679,153 @@ export default function AdminDashboard({
             >
               Tới Firebase Console <ExternalLink size={14} />
             </a>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP / MODAL XÁC NHẬN RESET DỮ LIỆU (MẬT KHẨU CẤP 2) */}
+      {isResetModalOpen && (
+        <div style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 9999,
+          background: "rgba(0, 0, 0, 0.85)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "16px"
+        }}>
+          <div className="glass-panel" style={{
+            maxWidth: "460px",
+            width: "100%",
+            padding: "28px",
+            border: "1px solid rgba(239, 68, 68, 0.6)",
+            boxShadow: "0 20px 50px rgba(239, 68, 68, 0.3)"
+          }}>
+            <div style={{
+              width: "56px",
+              height: "56px",
+              borderRadius: "50%",
+              background: "rgba(239, 68, 68, 0.2)",
+              border: "2px solid #ef4444",
+              color: "#ef4444",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 16px"
+            }}>
+              <AlertTriangle size={28} />
+            </div>
+
+            <h3 style={{
+              fontFamily: "var(--font-heading)",
+              fontSize: "20px",
+              color: "#fff",
+              textAlign: "center",
+              marginBottom: "8px"
+            }}>
+              Reset Toàn Bộ Dữ Liệu Bình Chọn
+            </h3>
+
+            <p style={{
+              fontSize: "13px",
+              color: "var(--text-secondary)",
+              textAlign: "center",
+              lineHeight: 1.6,
+              marginBottom: "16px"
+            }}>
+              Hành động này sẽ <strong>xóa toàn bộ số vote của 5 cặp đôi về 0</strong>, xóa sạch nhật ký kiểm toán và trả trạng thái 100 nhân viên về <strong>Chưa bình chọn</strong> (dùng khi kết thúc test để chuẩn bị cho cuộc thi chính thức).
+            </p>
+
+            <form onSubmit={handleConfirmReset}>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{
+                  display: "block",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: "#ffd700",
+                  marginBottom: "6px",
+                  textTransform: "uppercase"
+                }}>
+                  Nhập Mật Khẩu Cấp 2:
+                </label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type="password"
+                    className="custom-input"
+                    placeholder="Nhập: admin123"
+                    value={secondaryPin}
+                    onChange={(e) => setSecondaryPin(e.target.value)}
+                    style={{
+                      paddingLeft: "38px",
+                      borderColor: "rgba(239, 68, 68, 0.5)",
+                      fontSize: "15px"
+                    }}
+                    autoFocus
+                  />
+                  <ShieldAlert size={18} color="#ef4444" style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} />
+                </div>
+              </div>
+
+              {resetError && (
+                <div style={{
+                  background: "rgba(239, 68, 68, 0.2)",
+                  border: "1px solid rgba(239, 68, 68, 0.4)",
+                  color: "#fca5a5",
+                  fontSize: "13px",
+                  padding: "10px",
+                  borderRadius: "var(--radius-sm)",
+                  marginBottom: "14px"
+                }}>
+                  {resetError}
+                </div>
+              )}
+
+              {resetSuccess && (
+                <div style={{
+                  background: "rgba(16, 185, 129, 0.2)",
+                  border: "1px solid rgba(16, 185, 129, 0.4)",
+                  color: "#34d399",
+                  fontSize: "13px",
+                  padding: "10px",
+                  borderRadius: "var(--radius-sm)",
+                  marginBottom: "14px"
+                }}>
+                  {resetSuccess}
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  onClick={() => setIsResetModalOpen(false)}
+                  disabled={isResetting}
+                  className="btn-secondary"
+                  style={{ padding: "10px 18px", fontSize: "13px" }}
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={isResetting}
+                  style={{
+                    padding: "10px 20px",
+                    fontSize: "13px",
+                    fontWeight: 800,
+                    borderRadius: "var(--radius-sm)",
+                    border: "none",
+                    cursor: "pointer",
+                    background: "linear-gradient(135deg, #e52145, #b91c1c)",
+                    color: "#fff",
+                    boxShadow: "0 4px 15px rgba(229, 33, 69, 0.4)"
+                  }}
+                >
+                  {isResetting ? "Đang xử lý..." : "Xác Nhận Reset Về 0"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

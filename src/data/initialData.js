@@ -78,6 +78,6 @@ export const APP_CONFIG = {
   eventSubtitle: "Chào Mừng Ngày Phụ Nữ Việt Nam 20/10",
   companyName: "NAM HẢI GROUP",
   formQuestion: "Theo Anh/Chị, cặp đôi có phần thể hiện xuất sắc nhất chính là:",
-  defaultAdminPin: "2010",
+  defaultAdminPin: "300803",
   isOpen: true
 };
