@@ -1,6 +1,17 @@
-import React, { useState, useMemo } from "react";
-import { UserCheck, Building2, KeyRound, AlertCircle, CheckCircle2, Eye, EyeOff, Sparkles } from "lucide-react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import { UserCheck, Building2, KeyRound, AlertCircle, CheckCircle2, Eye, EyeOff, Search, X, ChevronDown } from "lucide-react";
 import { DEPARTMENTS } from "../data/initialData";
+
+// Hàm chuẩn hóa tiếng Việt để tìm kiếm không dấu
+function removeVietnameseTones(str) {
+  if (!str) return "";
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase();
+}
 
 export default function VoterIdentification({
   employees,
@@ -13,17 +24,84 @@ export default function VoterIdentification({
   deviceHasVoted
 }) {
   const [showCode, setShowCode] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const authInputRef = useRef(null);
 
-  // Lọc danh sách nhân viên theo phòng ban đã chọn
-  const filteredEmployees = useMemo(() => {
-    if (!selectedDepartment) return employees;
-    return employees.filter((e) => e.department === selectedDepartment);
-  }, [employees, selectedDepartment]);
+  // Đóng danh sách gợi ý khi bấm ra ngoài
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, []);
 
-  // Thông tin nhân viên đang chọn
+  // Thông tin nhân viên đang được chọn
   const selectedEmp = useMemo(() => {
     return employees.find((e) => e.id === selectedEmployeeId);
   }, [employees, selectedEmployeeId]);
+
+  // Cập nhật giá trị ô input khi đã chọn nhân viên
+  useEffect(() => {
+    if (selectedEmp) {
+      setSearchQuery(selectedEmp.name);
+    } else if (!isDropdownOpen) {
+      setSearchQuery("");
+    }
+  }, [selectedEmp, isDropdownOpen]);
+
+  // Lọc danh sách gợi ý thông minh (hỗ trợ cả gõ có dấu và không dấu tiếng Việt)
+  const suggestions = useMemo(() => {
+    let list = employees;
+    if (selectedDepartment) {
+      list = list.filter((e) => e.department === selectedDepartment);
+    }
+
+    if (!searchQuery.trim()) {
+      return list;
+    }
+
+    const cleanQuery = removeVietnameseTones(searchQuery.trim());
+    return list.filter((e) => {
+      const cleanName = removeVietnameseTones(e.name);
+      const cleanDept = removeVietnameseTones(e.department);
+      const cleanId = (e.id || "").toLowerCase();
+      return cleanName.includes(cleanQuery) || cleanDept.includes(cleanQuery) || cleanId.includes(cleanQuery);
+    });
+  }, [employees, selectedDepartment, searchQuery]);
+
+  // Khi người dùng bấm chọn 1 người từ danh sách gợi ý
+  const handleSelectEmployee = (emp) => {
+    if (emp.hasVoted) return; // Không chọn người đã vote
+    setSelectedEmployeeId(emp.id);
+    setSelectedDepartment(emp.department); // Tự động chọn phòng ban tương ứng
+    setSearchQuery(emp.name);
+    setIsDropdownOpen(false);
+    setAuthCode("");
+
+    // Tự động chuyển tiêu điểm sang ô nhập mã 4 số cuối SĐT
+    setTimeout(() => {
+      if (authInputRef.current) {
+        authInputRef.current.focus();
+      }
+    }, 150);
+  };
+
+  // Nút xóa để chọn người khác
+  const handleClearSelection = () => {
+    setSelectedEmployeeId("");
+    setSearchQuery("");
+    setAuthCode("");
+    setIsDropdownOpen(true);
+  };
 
   return (
     <div
@@ -94,7 +172,7 @@ export default function VoterIdentification({
 
       {/* 3 Trường nhập liệu tối ưu điện thoại */}
       <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-        {/* 1. Chọn phòng ban */}
+        {/* 1. Chọn phòng ban (Tùy chọn lọc nhanh) */}
         <div>
           <label style={{
             display: "flex",
@@ -106,7 +184,7 @@ export default function VoterIdentification({
             marginBottom: "6px"
           }}>
             <Building2 size={16} color="#f5c044" />
-            1. Phòng Ban của bạn:
+            1. Phòng Ban (Lọc nhanh):
           </label>
           <select
             className="custom-select"
@@ -114,6 +192,7 @@ export default function VoterIdentification({
             onChange={(e) => {
               setSelectedDepartment(e.target.value);
               setSelectedEmployeeId("");
+              setSearchQuery("");
               setAuthCode("");
             }}
             style={{ minHeight: "46px", fontSize: "15px" }}
@@ -127,38 +206,201 @@ export default function VoterIdentification({
           </select>
         </div>
 
-        {/* 2. Chọn Tên */}
-        <div>
+        {/* 2. Ô TÌM KIẾM TỰ ĐỘNG GỢI Ý HỌ TÊN (AUTOCOMPLETE COMBOBOX) */}
+        <div ref={dropdownRef} style={{ position: "relative" }}>
           <label style={{
             display: "flex",
             alignItems: "center",
-            gap: "6px",
+            justifyContent: "space-between",
             fontSize: "13px",
             fontWeight: 700,
             color: "#ffc2d1",
             marginBottom: "6px"
           }}>
-            <UserCheck size={16} color="#f5c044" />
-            2. Họ và Tên của bạn:
+            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <UserCheck size={16} color="#f5c044" />
+              2. Gõ chữ tìm tên của bạn:
+            </span>
+            <span style={{ fontSize: "11px", color: "#ffd700", fontWeight: 600 }}>
+              (Tự gợi ý khi gõ)
+            </span>
           </label>
-          <select
-            className="custom-select"
-            value={selectedEmployeeId}
-            onChange={(e) => {
-              setSelectedEmployeeId(e.target.value);
-              setAuthCode("");
-            }}
-            style={{ minHeight: "46px", fontSize: "15px" }}
-          >
-            <option value="">
-              -- Chọn tên của bạn ({filteredEmployees.length} người) --
-            </option>
-            {filteredEmployees.map((emp) => (
-              <option key={emp.id} value={emp.id} disabled={emp.hasVoted}>
-                {emp.name} {emp.hasVoted ? "✔ (Đã bình chọn)" : ""}
-              </option>
-            ))}
-          </select>
+
+          <div style={{ position: "relative" }}>
+            <input
+              type="text"
+              className="custom-input"
+              placeholder="Gõ tên để tìm (VD: Nam, Hương, Chi, Đức...)"
+              value={searchQuery}
+              onFocus={() => setIsDropdownOpen(true)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setIsDropdownOpen(true);
+                if (selectedEmployeeId) {
+                  setSelectedEmployeeId(""); // Xóa chọn cũ khi người dùng gõ sửa
+                }
+              }}
+              style={{
+                minHeight: "48px",
+                fontSize: "16px",
+                paddingLeft: "40px",
+                paddingRight: selectedEmployeeId || searchQuery ? "40px" : "36px",
+                borderColor: selectedEmp ? "#ffd700" : undefined,
+                background: selectedEmp ? "rgba(35, 20, 50, 0.95)" : undefined
+              }}
+            />
+
+            {/* Icon kính lúp bên trái */}
+            <Search
+              size={18}
+              color="var(--text-muted)"
+              style={{
+                position: "absolute",
+                left: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                pointerEvents: "none"
+              }}
+            />
+
+            {/* Nút xóa nhanh bên phải */}
+            {(selectedEmployeeId || searchQuery) ? (
+              <button
+                type="button"
+                onClick={handleClearSelection}
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "rgba(255, 255, 255, 0.15)",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "24px",
+                  height: "24px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                  cursor: "pointer"
+                }}
+                title="Xóa để chọn lại"
+              >
+                <X size={14} />
+              </button>
+            ) : (
+              <ChevronDown
+                size={18}
+                color="var(--text-muted)"
+                style={{
+                  position: "absolute",
+                  right: "12px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  pointerEvents: "none"
+                }}
+              />
+            )}
+          </div>
+
+          {/* MENU DANH SÁCH GỢI Ý THÔNG MINH */}
+          {isDropdownOpen && (
+            <div
+              style={{
+                position: "absolute",
+                top: "calc(100% + 6px)",
+                left: 0,
+                right: 0,
+                zIndex: 60,
+                background: "rgba(18, 11, 30, 0.98)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                border: "1px solid #ffd700",
+                borderRadius: "var(--radius-md)",
+                boxShadow: "0 15px 35px rgba(0, 0, 0, 0.8), 0 0 20px rgba(245, 192, 68, 0.25)",
+                maxHeight: "260px",
+                overflowY: "auto",
+                padding: "6px"
+              }}
+            >
+              {suggestions.length === 0 ? (
+                <div style={{
+                  padding: "16px",
+                  textAlign: "center",
+                  color: "var(--text-muted)",
+                  fontSize: "13px"
+                }}>
+                  Không tìm thấy nhân viên nào khớp với <strong>"{searchQuery}"</strong>
+                </div>
+              ) : (
+                suggestions.map((emp) => (
+                  <div
+                    key={emp.id}
+                    onClick={() => handleSelectEmployee(emp)}
+                    style={{
+                      padding: "10px 14px",
+                      borderRadius: "var(--radius-sm)",
+                      cursor: emp.hasVoted ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      transition: "all 0.15s ease",
+                      background: selectedEmployeeId === emp.id
+                        ? "rgba(245, 192, 68, 0.2)"
+                        : "transparent",
+                      borderBottom: "1px solid rgba(255, 255, 255, 0.04)",
+                      opacity: emp.hasVoted ? 0.55 : 1
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!emp.hasVoted) e.currentTarget.style.background = "rgba(255, 255, 255, 0.08)";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedEmployeeId !== emp.id) e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    <div>
+                      <div style={{
+                        fontWeight: 700,
+                        fontSize: "15px",
+                        color: selectedEmployeeId === emp.id ? "#ffd700" : "#fff"
+                      }}>
+                        {emp.name}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                        {emp.department} • Mã: {emp.id}
+                      </div>
+                    </div>
+
+                    <div>
+                      {emp.hasVoted ? (
+                        <span style={{
+                          fontSize: "11px",
+                          color: "#f87171",
+                          fontWeight: 700,
+                          background: "rgba(239, 68, 68, 0.15)",
+                          padding: "3px 8px",
+                          borderRadius: "4px"
+                        }}>
+                          Đã vote
+                        </span>
+                      ) : (
+                        <span style={{
+                          fontSize: "11px",
+                          color: "#34d399",
+                          fontWeight: 700,
+                          background: "rgba(16, 185, 129, 0.15)",
+                          padding: "3px 8px",
+                          borderRadius: "4px"
+                        }}>
+                          Chọn
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
         {/* 3. Nhập 4 số cuối SĐT (bật bàn phím số numeric trên điện thoại) */}
@@ -173,10 +415,11 @@ export default function VoterIdentification({
             marginBottom: "6px"
           }}>
             <KeyRound size={16} color="#f5c044" />
-            3. Mã bảo mật (4 số cuối SĐT của bạn):
+            3. Mã xác thực (4 số cuối SĐT của bạn):
           </label>
           <div style={{ position: "relative" }}>
             <input
+              ref={authInputRef}
               type={showCode ? "text" : "password"}
               inputMode="numeric"
               pattern="[0-9]*"
@@ -218,7 +461,7 @@ export default function VoterIdentification({
         </div>
       </div>
 
-      {/* Thông tin trạng thái cử tri */}
+      {/* Thông tin trạng thái cử tri đã chọn */}
       {selectedEmp && (
         <div style={{
           marginTop: "14px",
@@ -249,7 +492,7 @@ export default function VoterIdentification({
               </span>
             ) : (
               <span style={{ color: "#34d399", fontWeight: 600 }}>
-                ✔ Sẵn sàng! Vui lòng nhập 4 số cuối SĐT và chọn cặp đôi bên dưới.
+                ✔ Đã nhận diện! Vui lòng nhập 4 số cuối SĐT và chọn cặp đôi bên dưới.
               </span>
             )}
           </div>
